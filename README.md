@@ -14,6 +14,22 @@ This tooling this project uses is as follows:
 * [tslint](https://palantir.github.io/tslint/)
 * [graphql-schema-linter](https://github.com/cjoudrey/graphql-schema-linter)
 
+# Usage
+
+This project uses a basic `Makefile` to automate tasks.
+
+To build the project for the first time run, this will run `npm install`, lint, test and build your code
+
+```
+make ci
+```
+
+To deploy the project you will require a staging bucket exported as `S3_BUCKET` environment variable, then you can run.
+
+```
+make package deploy
+```
+
 # Conventions
 
 Throughout the code you will see reference to environments, this convention enables you to run a group of dependent components which are linked together based on:

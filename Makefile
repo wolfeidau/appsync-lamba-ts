@@ -2,9 +2,9 @@ APPNAME ?= appsync-events
 ENV ?= dev
 ENV_NO ?= 1
 
-default: lint lint-graphql test build
+default: lint lint-graphql test
 .PHONY: default
-ci: clean install test build
+ci: clean install lint lint-graphql test build
 .PHONY: ci
 
 lint:
@@ -39,7 +39,7 @@ package:
 	echo "package lambdas into handler.zip"
 	(cp -R node_modules dist && cd dist && zip -q -9 -r ../handler.zip .)
 	echo "Running as: $(shell aws sts get-caller-identity --query Arn --output text)"
-	aws cloudformation package \
+	@aws cloudformation package \
 		--template-file deploy.sam.yml \
 		--output-template-file deploy.out.yml \
 		--s3-bucket $(S3_BUCKET) \
@@ -48,7 +48,7 @@ package:
 
 deploy:
 	echo "Running as: $(shell aws sts get-caller-identity --query Arn --output text)"
-	aws cloudformation deploy --no-fail-on-empty-changeset \
+	@aws cloudformation deploy --no-fail-on-empty-changeset \
 		--stack-name "$(APPNAME)-$(ENV)-$(ENV_NO)" \
 		--capabilities CAPABILITY_NAMED_IAM \
 		--template-file ./deploy.out.yml \
