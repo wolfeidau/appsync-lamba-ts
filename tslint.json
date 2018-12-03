@@ -1,0 +1,24 @@
+{
+  "defaultSeverity": "error",
+  "extends": [
+      "tslint:recommended"
+  ],
+  "jsRules": {},
+  "rules": {
+      "no-console": false,
+      "max-line-length": false,
+      "semicolon": [
+          true,
+          "never"
+      ],
+      "interface-name": false,
+      "object-literal-sort-keys": false
+  },
+  "rulesDirectory": [],
+  "linterOptions": {
+      "exclude": [
+          "node_modules/**/*.ts",
+          "coverage/lcov-report/*.js"
+      ]
+  }
+}

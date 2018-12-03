@@ -1,0 +1,68 @@
+{
+  "name": "appsync-lamba-ts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "test": "jest",
+    "build": "tsc",
+    "lint": "npm run lint-graphql",
+    "lint-graphql": "graphql-schema-linter schema.graphql"
+  },
+  "keywords": [
+    "aws",
+    "appsync",
+    "typescript"
+  ],
+  "author": "Mark Wolfe <mark@wolfe.id.au>",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.368.0",
+    "bunyan": "^1.8.12"
+  },
+  "devDependencies": {
+    "@types/bunyan": "^1.8.5",
+    "@types/aws-lambda": "^8.10.15",
+    "@types/jest": "^23.3.10",
+    "@types/node": "^10.12.11",
+    "graphql-schema-linter": "^0.1.6",
+    "jest": "^23.6.0",
+    "ts-jest": "^23.10.5",
+    "tslint": "^5.11.0",
+    "typescript": "^3.2.1"
+  },
+  "jest": {
+    "collectCoverage": true,
+    "coverageReporters": [
+      "text"
+    ],
+    "moduleFileExtensions": [
+      "ts",
+      "js"
+    ],
+    "transform": {
+      "^.+\\.(ts|tsx)$": "ts-jest"
+    },
+    "globals": {
+      "ts-jest": {
+        "tsConfig": "tsconfig.json"
+      }
+    },
+    "testMatch": [
+      "**/tests/*.+(ts)"
+    ]
+  },
+  "graphql-schema-linter": {
+    "rules": [
+      "defined-types-are-used",
+      "enum-values-all-caps",
+      "enum-values-sorted-alphabetically",
+      "fields-are-camel-cased",
+      "input-object-values-are-camel-cased",
+      "relay-connection-types-spec",
+      "relay-connection-arguments-spec",
+      "types-are-capitalized"
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+type Event {
+  eventId: String!
+  content: String!
+  created: Int!
+}
+
+type EventsPage {
+  items: [Event]
+  nextToken: String
+}
+
+type Mutation {
+  createEvent(
+    eventId: String!,
+    content: String!,
+    created: Int!
+  ): Event
+}
+
+type Subscription {
+  newEvent: Event @aws_subscribe(mutations: ["createEvent"])
+}
+
+type Query {
+  listEvents(nextToken: String, limit: Int): EventsPage
+}
+
+schema {
+  subscription: Subscription
+  query: Query
+  mutation: Mutation
+}

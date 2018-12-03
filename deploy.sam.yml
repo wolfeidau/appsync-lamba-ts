@@ -1,0 +1,201 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'appsync: Serverless GraphQL datasource for events, a @wolfeidau template'
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+
+  EnvironmentName:
+    Type: String
+    AllowedValues: [ dev, tst, prd ]
+    Default: dev
+
+  EnvironmentNumber:
+    Type: String
+    Default: 1
+
+Resources:
+
+  EventsGraphQLApi:
+    Type: AWS::AppSync::GraphQLApi
+    Properties:
+      Name: !Sub "EventsGraphQLApi-${EnvironmentName}-${EnvironmentNumber}"
+      AuthenticationType: AWS_IAM
+      LogConfig:
+        CloudWatchLogsRoleArn: !GetAtt AppSyncServiceRole.Arn
+        FieldLogLevel: "ERROR"
+
+  AppSyncServiceRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "appsync.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSAppSyncPushToCloudWatchLogs
+
+  AppSyncLambdaInvokePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: AppSyncLambdaInvokePolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - lambda:*
+          Resource: !GetAtt EventsLambdaFunction.Arn
+      Roles:
+      - !Ref AppSyncServiceRole
+
+  AppSyncLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+
+  DynamodbAccessPolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "dynamodb-access"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:DeleteItem
+              - dynamodb:UpdateItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+            Resource:
+              - !GetAtt EventsTable.Arn
+              - !Sub '${EventsTable.Arn}/*'
+      Roles:
+        - Ref: "AppSyncLambdaRole"
+
+  EventsLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: "appsync.handler"
+      Role:
+        Fn::GetAtt: AppSyncLambdaRole.Arn
+      Runtime: "nodejs8.10"
+      Timeout: 30
+      MemorySize: 256
+      CodeUri: ./handler.zip
+      Environment:
+        Variables:
+          EVENTS_TABLE_NAME: !Ref EventsTable
+
+  EventsAppSyncSchema:
+    Type: "AWS::AppSync::GraphQLSchema"
+    Properties:
+      ApiId: !GetAtt EventsGraphQLApi.ApiId
+      DefinitionS3Location: ./schema.graphql
+
+  EventsLambdaDataSource:
+    Type: "AWS::AppSync::DataSource"
+    Properties:
+      ApiId: !GetAtt EventsGraphQLApi.ApiId
+      Name: "EventsLambdaDataSource"
+      Description: "Events Lambda data source"
+      Type: "AWS_LAMBDA"
+      ServiceRoleArn: !GetAtt AppSyncServiceRole.Arn
+      LambdaConfig:
+        LambdaFunctionArn: !GetAtt EventsLambdaFunction.Arn
+
+  ListEventsQueryResolver:
+    Type: "AWS::AppSync::Resolver"
+    Properties:
+      ApiId: !GetAtt EventsGraphQLApi.ApiId
+      TypeName: "Query"
+      FieldName: "listEvents"
+      DataSourceName: !GetAtt EventsLambdaDataSource.Name
+      RequestMappingTemplate: |
+        {
+          "version": "2017-02-28",
+          "operation": "Invoke",
+          "payload": {
+            "field": "listEvents",
+            "arguments": $utils.toJson($context.arguments),
+            "identity": $utils.toJson($context.identity),
+          }
+        }
+      ResponseMappingTemplate: |
+        $utils.toJson($context.result)
+
+  CreateEventQueryResolver:
+    Type: "AWS::AppSync::Resolver"
+    Properties:
+      ApiId: !GetAtt EventsGraphQLApi.ApiId
+      TypeName: "Mutation"
+      FieldName: "createEvent"
+      DataSourceName: !GetAtt EventsLambdaDataSource.Name
+      RequestMappingTemplate: |
+        {
+          "version": "2017-02-28",
+          "operation": "Invoke",
+          "payload": {
+            "field": "createEvent",
+            "arguments": $utils.toJson($context.arguments),
+            "identity": $utils.toJson($context.identity),
+          }
+        }
+      ResponseMappingTemplate: |
+        $utils.toJson($context.result)
+
+  EventsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      SSESpecification:
+        SSEEnabled: true
+      AttributeDefinitions:
+        - AttributeName: created
+          AttributeType: N
+        - AttributeName: eventId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: eventId
+          KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
+      TimeToLiveSpecification:
+        AttributeName: expiry
+        Enabled: true
+
+Outputs:
+  ActivityTable:
+    Value: !Ref EventsTable
+    Export:
+      Name: !Sub "${AWS::StackName}-EventsTable"
+  GraphQLApi:
+    Description: Unique AWS AppSync GraphQL API Identifier
+    Value: !GetAtt EventsGraphQLApi.ApiId
+    Export:
+      Name: !Sub "${AWS::StackName}-EventsGraphQLApi"
+  GraphQLApiUrl:
+    Description: The Endpoint URL of your GraphQL API.
+    Value: !GetAtt EventsGraphQLApi.GraphQLUrl
+    Export:
+      Name: !Sub "${AWS::StackName}-EventsGraphQLApiUrl"
