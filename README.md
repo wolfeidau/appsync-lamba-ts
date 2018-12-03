@@ -1,6 +1,18 @@
 # appsync-lambda-ts
 
-This project is an example project which illustrates how to build an AppSync Lambda data source using Typescript.
+This project is an example project which illustrates how to build an [AppSync](https://aws.amazon.com/appsync/) [Lambda](https://aws.amazon.com/lambda/) data source using [Typescript](https://www.typescriptlang.org/).
+
+# Features
+
+This project has a basic handler, with an example test using [Jest](https://jestjs.io/). It is deployed using an [AWS SAM](https://github.com/awslabs/serverless-application-model) file which creates the AppSync API, Lambda and a DynamoDB table.
+
+# Tools
+
+This tooling this project uses is as follows:
+
+* [AWS SAM](https://github.com/awslabs/serverless-application-model)
+* [tslint](https://palantir.github.io/tslint/)
+* [graphql-schema-linter](https://github.com/cjoudrey/graphql-schema-linter)
 
 # Conventions
 
