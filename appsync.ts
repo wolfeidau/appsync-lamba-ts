@@ -1,12 +1,21 @@
+import AWS from "aws-sdk"
 import bunyan from "bunyan"
 
-// const tableName = process.env.EVENT_TABLE_NAME || "";
+const tableName = process.env.EVENT_TABLE_NAME || ""
+
+const docClient = new AWS.DynamoDB.DocumentClient()
 
 const logger = bunyan.createLogger({
   name: "appsync",
 })
 
-export const handler = (event: any) => {
+interface HandlerEvent {
+  identity: any
+  arguments: any
+  field: string
+}
+
+export const handler = (event: HandlerEvent) => {
 
   logger.info(event)
 
@@ -20,24 +29,40 @@ export const handler = (event: any) => {
   }
 }
 
-async function listEvents(event: any): Promise<any> {
+function listEvents(event: HandlerEvent): Promise<any> {
   logger.info({
     op: "dispatchListEvent",
-    params: event.params,
+    arguments: event.arguments,
   })
 
-  // TODO: build actual list events
+  const params: AWS.DynamoDB.DocumentClient.ScanInput = {
+    TableName: tableName,
+    Limit: event.arguments.limit,
+    ExclusiveStartKey: event.arguments.nextToken,
+  }
 
-  return Promise.resolve({})
+  return docClient.scan(params).promise().then((res: AWS.DynamoDB.DocumentClient.ScanOutput) => {
+    return {
+      items: res.Items,
+      nextToken: res.LastEvaluatedKey,
+    }
+  })
 }
 
-async function createEvent(event: any): Promise<any> {
+function createEvent(event: HandlerEvent): Promise<any> {
   logger.info({
     op: "create",
-    params: event.params,
+    params: event.arguments,
   })
 
   // TODO: build actual create event
+  const params: AWS.DynamoDB.DocumentClient.PutItemInput = {
+    TableName: tableName,
+    Item: event.arguments,
+    ReturnValues: "ALL_NEW",
+  }
 
-  return Promise.resolve({})
+  return docClient.put(params).promise().then((res) => {
+    return res.Attributes
+  })
 }

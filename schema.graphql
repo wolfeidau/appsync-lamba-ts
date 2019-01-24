@@ -1,7 +1,7 @@
 type Event {
   eventId: String!
   content: String!
-  created: Int!
+  created: String!
 }
 
 type EventsPage {
@@ -13,7 +13,7 @@ type Mutation {
   createEvent(
     eventId: String!,
     content: String!,
-    created: Int!
+    created: String!
   ): Event
 }
 
@@ -22,7 +22,7 @@ type Subscription {
 }
 
 type Query {
-  listEvents(nextToken: String, limit: Int): EventsPage
+  listEvents(nextToken: String, limit: Int = 20): EventsPage
 }
 
 schema {
