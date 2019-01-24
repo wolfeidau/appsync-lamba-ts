@@ -6,19 +6,15 @@ Parameters:
 
   EnvironmentName:
     Type: String
-    AllowedValues: [ dev, tst, prd ]
+    AllowedValues: [ dev, test, prod ]
     Default: dev
-
-  EnvironmentNumber:
-    Type: String
-    Default: 1
 
 Resources:
 
   EventsGraphQLApi:
     Type: AWS::AppSync::GraphQLApi
     Properties:
-      Name: !Sub "EventsGraphQLApi-${EnvironmentName}-${EnvironmentNumber}"
+      Name: !Sub "EventsGraphQLApi-${EnvironmentName}"
       AuthenticationType: AWS_IAM
       LogConfig:
         CloudWatchLogsRoleArn: !GetAtt AppSyncServiceRole.Arn
@@ -105,7 +101,7 @@ Resources:
       CodeUri: ./handler.zip
       Environment:
         Variables:
-          EVENTS_TABLE_NAME: !Ref EventsTable
+          EVENT_TABLE_NAME: !Ref EventsTable
 
   EventsAppSyncSchema:
     Type: "AWS::AppSync::GraphQLSchema"
@@ -167,19 +163,17 @@ Resources:
   EventsTable:
     Type: AWS::DynamoDB::Table
     Properties:
+      BillingMode: PAY_PER_REQUEST
       SSESpecification:
         SSEEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
       AttributeDefinitions:
-        - AttributeName: created
-          AttributeType: N
         - AttributeName: eventId
           AttributeType: S
       KeySchema:
         - AttributeName: eventId
-          KeyType: RANGE
-      ProvisionedThroughput:
-        ReadCapacityUnits: 2
-        WriteCapacityUnits: 2
+          KeyType: HASH
       TimeToLiveSpecification:
         AttributeName: expiry
         Enabled: true
@@ -189,11 +183,16 @@ Outputs:
     Value: !Ref EventsTable
     Export:
       Name: !Sub "${AWS::StackName}-EventsTable"
-  GraphQLApi:
+  EventsGraphQLApi:
+    Description: Events GraphQL Name
+    Value: !Ref EventsGraphQLApi
+    Export:
+      Name: !Sub "${AWS::StackName}-EventsGraphQLApi"
+  EventsGraphQLApiId:
     Description: Unique AWS AppSync GraphQL API Identifier
     Value: !GetAtt EventsGraphQLApi.ApiId
     Export:
-      Name: !Sub "${AWS::StackName}-EventsGraphQLApi"
+      Name: !Sub "${AWS::StackName}-EventsGraphQLApiId"
   GraphQLApiUrl:
     Description: The Endpoint URL of your GraphQL API.
     Value: !GetAtt EventsGraphQLApi.GraphQLUrl

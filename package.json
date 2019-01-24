@@ -5,7 +5,7 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "test": "jest",
+    "test": "EVENT_TABLE_NAME=events-testing jest --verbose=false",
     "build": "tsc",
     "lint": "npm run lint-graphql",
     "lint-graphql": "graphql-schema-linter schema.graphql"
